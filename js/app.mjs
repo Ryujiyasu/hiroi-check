@@ -232,9 +232,9 @@ let oxiPromise = null, template = null;
 function loadOxi(onProgress) {
   if (oxiPromise) return oxiPromise;
   oxiPromise = (async () => {
-    const oxi = await import("../vendor/oxi/oxidocs_wasm.js");
-    const res = await fetch(new URL("../vendor/oxi/oxidocs_wasm_bg.wasm", import.meta.url));
-    const total = Number(res.headers.get("content-length")) || 97e6;
+    const oxi = await import("../vendor/oxi/oxicells_lite.js");
+    const res = await fetch(new URL("../vendor/oxi/oxicells_lite_bg.wasm", import.meta.url));
+    const total = Number(res.headers.get("content-length")) || 4.3e6;
     const reader = res.body.getReader(), chunks = [];
     let got = 0;
     for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; onProgress?.(got / total); }
@@ -280,7 +280,7 @@ function renderCalc() {
   const s = $("#s-calc");
   if (!state.calc) {
     $("#calc-state").textContent = "…"; $("#calc-state").className = "busy";
-    s.replaceChildren(h("p", { class: "note" }, "Excel の計算エンジン（Oxi）を読み込んでいます。初回だけ時間がかかります。"), h("div", { class: "progress" }, h("i", { id: "oxi-bar" })));
+    s.replaceChildren(h("p", { class: "note" }, "Excel の計算エンジン（Oxi）を読み込んでいます。"), h("div", { class: "progress" }, h("i", { id: "oxi-bar" })));
     return;
   }
   if (state.calc.error) { s.replaceChildren(h("div", { class: "err-msg" }, state.calc.error)); return; }

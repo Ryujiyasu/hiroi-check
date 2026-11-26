@@ -1,0 +1,25 @@
+[package]
+name = "oxicells-lite"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+description = "Oxi の表計算部分だけを WebAssembly にしたもの（ひろいチェック用）。parse / edit / recalc / save の4関数"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# 手元では path = "/data/oxi-release-099/crates/oxicells-core" でビルド
+oxicells-core = { git = "https://github.com/Ryujiyasu/oxi", rev = "38edadb5" }
+wasm-bindgen = "=0.2.114"
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+console_error_panic_hook = "0.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+
+[workspace]

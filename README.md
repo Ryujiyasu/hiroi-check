@@ -38,7 +38,6 @@ Jw_cad の下水道図面（平面図・縦断図）から、数量計算書の�
 - 人孔・管種のコード（`js/core.mjs` の `MH_CODE`・`PIPE_CODE`）は仮の値です。
 - 取込用CSVは集計表をそのまま CSV にしたものです。積算システムの取込仕様に合わせるのはこれからです。
 - 横断図・舗装図・人孔構造図からの拾い（基礎材・舗装・バックホウ規格・接続管種など）は未対応です。
-- Oxi のビルド済み WebAssembly は約 97MB（文書エンジン全体）で、初回の読み込みに時間がかかります。表計算だけの軽いビルドに置き換える予定です。
 - サンプル図面はすべて検証用に作った架空のものです。「豊川市の書き方を再現した図面」も、書き方だけを再現し数値は架空です。
 
 ## 構成
@@ -51,7 +50,8 @@ Jw_cad の下水道図面（平面図・縦断図）から、数量計算書の�
 | `js/ai.mjs`・`js/ai_prompt.json` | AI チェック（任意） |
 | `js/app.mjs` | 画面の制御 |
 | `template/` | 模擬版の数量計算書と対応表（`tools/make_template.py` で生成） |
-| `vendor/` | ezjww（MIT）、Oxi（MPL-2.0）、Anthropic SDK（MIT）。各ライセンスを同梱 |
+| `vendor/` | ezjww（MIT）、Oxi の表計算部分（MPL-2.0・約4MB）、Anthropic SDK（MIT）。各ライセンスを同梱 |
+| `tools/oxicells-lite/` | Oxi の表計算部分だけを WebAssembly にするクレート（parse / edit / recalc / save の4関数） |
 | `samples/` | 検証用の架空の図面 |
 | `test/` | `parity.mjs`（Python 版の試作との一致確認。試作は非公開）、`e2e.mjs`・`e2e_change.mjs`（ヘッドレス Chrome での通し確認） |
 
