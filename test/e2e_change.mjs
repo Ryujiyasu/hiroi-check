@@ -9,7 +9,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 950 } });
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-await page.goto("http://127.0.0.1:8765/index.html");
+await page.goto(process.env.BASE ?? "http://127.0.0.1:8765/index.html");
 await page.click('[data-sample="T+U"]');
 await page.waitForSelector("#tab-diff:not([hidden])", { timeout: 20000 });
 await page.waitForSelector("#calc-state.ok", { timeout: 120000 });

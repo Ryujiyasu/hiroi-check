@@ -1,7 +1,7 @@
 // 画面の制御。図面の読み取り・検算・Excel の計算はすべてこのブラウザの中で行う。
 // AI チェックだけは、利用者が押したときに限り、図面の文字データを Claude API に送る。
 import * as ez from "../vendor/ezjww/ezjww.mjs";
-import { extractProfile, runTakeoff, diffSheets, PIPE_FILLED, MH_FILLED, PIPE_COLUMNS, MH_COLUMNS, sheetCsv } from "./core.mjs";
+import { extractProfile, runTakeoff, diffSheets, PIPE_FILLED_ALL, SECTION_COLUMNS, MH_FILLED, PIPE_COLUMNS, MH_COLUMNS, sheetCsv } from "./core.mjs";
 import { DrawingView } from "./render.mjs";
 import { fillWorkbook, recalc, readSummary, readCalc, exportXlsx, summaryCsv } from "./sheet.mjs";
 
@@ -120,7 +120,8 @@ function allChecks() {
 function renderSummary() {
   const set = cur(), checks = allChecks();
   const errs = checks.filter((c) => c.level === "error").length, warns = checks.length - errs;
-  const cells = set.sheet["管きょ"].length * PIPE_FILLED.length + set.sheet["人孔"].length * MH_FILLED.length;
+  const filled = (rows, cols) => rows.reduce((n, r) => n + cols.filter((c) => r[c] !== "" && r[c] != null).length, 0);
+  const cells = filled(set.sheet["管きょ"], PIPE_FILLED_ALL) + filled(set.sheet["人孔"], MH_FILLED);
   const card = (cls, k, v, small) => h("div", { class: `card ${cls}` }, h("div", { class: "k" }, k), h("div", { class: "v num" }, v, small ? h("small", {}, small) : null));
   $("#summary").replaceChildren(
     card("", `読み取った区間・人孔${hasChange() ? `（${state.variant}）` : ""}`, `${set.work.spans.length} 区間`, `・ ${set.work.mh.length} 基`),
@@ -212,8 +213,11 @@ function renderPipe() {
   $("#s-pipe").replaceChildren(
     variantNote(),
     h("p", { class: "note" }, `数量計算書の入力シートに入れる値です。値を押すと、図面上の根拠の文字を示します。管路は${set.sheet.direction > 0 ? "図面の左が上流" : "図面の左が下流"}と判断しました。`),
-    table(rows, PIPE_FILLED, (src) => point(state.variant, "縦断図", [src], "info"), { bad: badNames(set), changed: changedCells("管きょ") }),
-    h("p", { class: "note" }, "基礎材・舗装・バックホウ規格などの列（", PIPE_COLUMNS.slice(13).join("・"), "）は、横断図・舗装図・人孔構造図から拾う予定です（未対応）。"),
+    table(rows, PIPE_FILLED_ALL, (src) => point(state.variant, src.sheet ?? "縦断図", [src], "info"), { bad: badNames(set), changed: changedCells("管きょ") }),
+    h("p", { class: "note" }, set.section
+      ? "基礎材・舗装幅員・舗装厚は、標準横断図・舗装構成図から拾いました（工事全体に同じ値を入れています）。"
+      : "標準横断図・舗装構成図が見つからなかったため、基礎材・舗装幅員・舗装厚の列は空欄です。",
+      "まだ拾っていない列：", PIPE_COLUMNS.filter((c) => !PIPE_FILLED_ALL.includes(c)).join("・"), "（人孔構造図・施工条件から決まるもの）。"),
     h("div", { class: "dl" }, h("button", { class: "btn small", onclick: () => download(sheetCsv(rows, PIPE_COLUMNS), `入力シート_管きょ_${state.variant}.csv`, "text/csv") }, "CSVで保存")));
 }
 

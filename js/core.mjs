@@ -37,6 +37,10 @@ export const PIPE_COLUMNS = [
   "舗装切断", "仮舗装", "バックホウ規格",
 ];
 export const PIPE_FILLED = PIPE_COLUMNS.slice(0, 13);
+// 標準横断図・舗装構成図から拾う列（図面にあれば）
+export const SECTION_COLUMNS = ["基礎材", "舗装幅員", "表層+プライム", "上層(瀝安)", "路盤上層(粒調)", "路盤下層(RC-40)"];
+export const PIPE_FILLED_ALL = [...PIPE_FILLED, ...SECTION_COLUMNS];
+export const BASE_CODE = { "再生砂": 1 };      // 仮（入力シートの見出し「基礎材 再生砂 1」から）
 export const MH_COLUMNS = ["人孔No.", "人孔種別", "人孔深",
   "接続管種(東)", "接続管種(西)", "接続管種(南)", "接続管種(北)", "荷重", "底部工", "調整", "基礎工"];
 export const MH_FILLED = MH_COLUMNS.slice(0, 3);
@@ -98,6 +102,11 @@ export function buildInputSheet(work) {
       "人孔種別(下流側)": e.dn.evidence?.type, "人孔種別(上流側)": e.up.evidence?.type,
       "土被り(下流側)": e.dn.evidence?.[dnSide], "土被り(上流側)": e.up.evidence?.[upSide], "国費/単独": sp.evidence?.fund,
     };
+    if (work.section) for (const col of SECTION_COLUMNS) {
+      if (work.section.values[col] == null) continue;
+      row[col] = work.section.values[col];
+      row._src[col] = work.section.evidence[col];
+    }
     row._span = k;
     return row;
   });
@@ -319,10 +328,33 @@ export function extractPlan(doc, name = "平面図") {
   return { sheet: "平面図", name, mh, spans, laterals, summary, masu_count: masu.length, masu_centers: masu, warnings };
 }
 
-export function toWork(profile, plan) {
+export function toWork(profile, plan, section = null) {
   const planTypes = Object.fromEntries((plan?.mh ?? []).map((m) => [m.name, m.type]));
   const mh = profile.mh.map((m) => ({ ...m, type: m.type ?? planTypes[m.name] ?? null }));
-  return { mh, spans: profile.spans };
+  return { mh, spans: profile.spans, section };
+}
+
+// ---------------------------------------------------------------- 標準横断図・舗装構成図
+
+/** 舗装の各層の厚さ（m）・舗装復旧幅・基礎材を拾う。どの図面にあっても読む（豊川市の図面では平面図と同じ用紙）。
+ *  書き方は推測を含む（実物の図面が手に入ったら合わせる）。見つからなければ null。 */
+export function extractSection(doc, sheetName) {
+  const texts = loadTexts(doc), values = {}, evidence = {};
+  const set = (col, v, t) => { if (values[col] == null) { values[col] = v; evidence[col] = { ...ev(t), sheet: sheetName }; } };
+  for (const t of texts) {
+    const s = t.text.replace(/\s+/g, "");
+    let m;
+    if ((m = /舗装(?:復旧)?幅(?:員)?[WＷ]?=?(\d+(?:\.\d+)?)m/.exec(s))) set("舗装幅員", (+m[1]).toFixed(2), t);
+    if (/基礎/.test(s) && (m = /(再生砂|砂基礎|砂)/.exec(s))) set("基礎材", BASE_CODE[m[1] === "再生砂" ? "再生砂" : m[1]] ?? m[1], t);
+    const tm = /t=(\d+(?:\.\d+)?)(cm|mm)/.exec(s);
+    if (!tm) continue;
+    const meters = ((+tm[1]) / (tm[2] === "cm" ? 100 : 1000)).toFixed(2);
+    if (/表層/.test(s)) set("表層+プライム", meters, t);
+    else if (/下層路盤|RC-?40|クラッシャラン/.test(s)) set("路盤下層(RC-40)", meters, t);
+    else if (/上層路盤|粒度調整|粒調/.test(s)) set("路盤上層(粒調)", meters, t);
+    else if (/(基層|上層).*(アスコン|瀝青|瀝安|安定処理)/.test(s)) set("上層(瀝安)", meters, t);
+  }
+  return Object.keys(values).length ? { values, evidence } : null;
 }
 
 // ---------------------------------------------------------------- 検算
@@ -437,8 +469,9 @@ export function runChecks(profile, plan) {
 export function runTakeoff(profileDoc, planDoc, names = {}) {
   const profile = extractProfile(profileDoc, names.profile);
   const plan = planDoc ? extractPlan(planDoc, names.plan) : null;
-  const work = toWork(profile, plan);
-  return { profile, plan, work, sheet: buildInputSheet(work), checks: runChecks(profile, plan) };
+  const section = (planDoc && extractSection(planDoc, "平面図")) || extractSection(profileDoc, "縦断図");
+  const work = toWork(profile, plan, section);
+  return { profile, plan, section, work, sheet: buildInputSheet(work), checks: runChecks(profile, plan) };
 }
 
 /** 入力シートの CSV（Excel で開ける UTF-8 BOM 付き）。 */
@@ -452,7 +485,7 @@ export function sheetCsv(rows, columns) {
 /** 当初と変更の入力シートを、区間（下流・上流の測点の組）と人孔番号で突き合わせる。 */
 export function diffSheets(base, change) {
   const out = { "管きょ": [], "人孔": [] };
-  const spec = [["管きょ", PIPE_FILLED, (r) => `${r["測点番号(下流側)"]}→${r["測点番号(上流側)"]}`], ["人孔", MH_FILLED, (r) => r["人孔No."]]];
+  const spec = [["管きょ", PIPE_FILLED_ALL, (r) => `${r["測点番号(下流側)"]}→${r["測点番号(上流側)"]}`], ["人孔", MH_FILLED, (r) => r["人孔No."]]];
   for (const [name, cols, keyOf] of spec) {
     const b = new Map(base[name].map((r) => [keyOf(r), r])), c = new Map(change[name].map((r) => [keyOf(r), r]));
     for (const k of new Set([...b.keys(), ...c.keys()])) {
