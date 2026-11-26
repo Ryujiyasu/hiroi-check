@@ -46,7 +46,7 @@ body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
 .card .v small { font-size: 12px; font-weight: 400; color: var(--mute); margin-left: 4px; }
 .card.err .v { color: var(--err); } .card.ok .v { color: var(--ok); } .card.warn .v { color: var(--warn); }
 
-.panes { flex: 1; display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; min-height: 520px; }
+.panes { display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; height: calc(100vh - 250px); min-height: 520px; }
 .pane { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .tabs { display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 8px; background: #fafbfc; }
 .tabs button:not(.btn) { font: inherit; font-size: 13px; border: 0; background: none; padding: 10px 12px; cursor: pointer; color: var(--mute); border-bottom: 2px solid transparent; }
