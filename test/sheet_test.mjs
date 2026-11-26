@@ -1,0 +1,18 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { readDocument } from "ezjww";
+import { runTakeoff } from "../js/core.mjs";
+import { fillWorkbook, recalc, readSummary, readCalc, exportXlsx } from "../js/sheet.mjs";
+const oxi = await import(process.env.OXI_JS);
+oxi.initSync({ module: readFileSync(process.env.OXI_WASM) });
+const root = new URL("../../poc/samples_synth/", import.meta.url).pathname;
+const code = process.argv[2] ?? "D";
+const r = runTakeoff(readDocument(readFileSync(`${root}工事${code}_02_縦断図.jww`)), readDocument(readFileSync(`${root}工事${code}_01_平面図.jww`)));
+const map = JSON.parse(readFileSync("template/template_map.json", "utf8"));
+const t0 = Date.now();
+const { bytes, written } = fillWorkbook(oxi, readFileSync("template/数量計算書_模擬版.xlsx"), map, r.sheet, 0);
+const wb = recalc(oxi, bytes);
+console.log(`書き込み ${written.length} セル, ${Date.now() - t0} ms`);
+const calc = readCalc(wb, map);
+console.log(calc.header.join(" | ")); calc.rows.forEach((x) => console.log(x.join(" | ")));
+console.table(readSummary(wb, map));
+writeFileSync(`/tmp/claude-1000/-data-toyokawa/e4bf927d-f920-4f36-b9b0-2f5f1eb74ef6/scratchpad/filled_${code}.xlsx`, exportXlsx(oxi, bytes, wb));

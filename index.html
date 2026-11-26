@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ひろいチェック — 下水道の数量拾い支援</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231f4e79%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22white%22%3E%E6%8B%BE%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">拾</span>
+    <div>
+      <h1 id="app-name">ひろいチェック</h1>
+      <p class="sub">下水道の図面を読む・確かめる・数量計算書に入れる</p>
+    </div>
+  </div>
+  <div class="local" title="図面の読み取り・検算・Excelの計算は、すべてこのブラウザの中で行います。外部に送るのは「AIチェック」を押したときだけです">
+    <span class="dot"></span>図面はこの端末の外に送りません
+  </div>
+</header>
+
+<section id="start" class="start">
+  <div class="drop" id="drop">
+    <p class="drop-title">Jw_cad の図面（平面図・縦断図）をここに置く</p>
+    <p class="drop-sub">.jww ファイルを2つまとめて選んでください。どちらが縦断図かは自動で判断します。</p>
+    <label class="btn primary">ファイルを選ぶ<input type="file" id="file" accept=".jww,.JWW" multiple hidden></label>
+  </div>
+  <div class="samples">
+    <p>サンプル図面で試す</p>
+    <button class="btn" data-sample="T">豊川市の書き方を再現した図面<small>左が下流・管径と勾配のまとめ書き・接続管・国費（数値は架空）</small></button>
+    <button class="btn" data-sample="C">誤記を含む図面<small>管底高の桁の入れ替えと延長の書き違い</small></button>
+    <button class="btn" data-sample="B">別のコンサルの書式<small>全角数字・行の並び・呼び方の違い</small></button>
+    <button class="btn" data-sample="T+U">当初と変更<small>上の図面と、区間を延ばした変更図面</small></button>
+  </div>
+</section>
+
+<main id="work" class="work" hidden>
+  <div class="bar">
+    <div class="files" id="files"></div>
+    <div class="actions">
+      <label class="btn small">変更図面を追加<input type="file" id="file2" accept=".jww,.JWW" multiple hidden></label>
+      <button class="btn small" id="again">別の図面を開く</button>
+    </div>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="panes">
+    <section class="pane drawing-pane">
+      <div class="tabs" id="dtabs">
+        <button data-d="縦断図" class="on">縦断図</button>
+        <button data-d="平面図">平面図</button>
+        <span class="vtabs" id="vtabs" hidden><button data-v="当初" class="on">当初</button><button data-v="変更">変更</button></span>
+        <span class="hint">ホイールで拡大・ドラッグで移動</span>
+        <button class="btn small" id="fit">全体を表示</button>
+      </div>
+      <div class="viewers" id="viewers"></div>
+    </section>
+    <section class="pane side">
+      <div class="tabs" id="stabs">
+        <button data-s="check" class="on">確認すべき箇所 <b id="n-check"></b></button>
+        <button data-s="pipe">入力シート（管きょ）</button>
+        <button data-s="mh">人孔</button>
+        <button data-s="calc">計算結果 <b id="calc-state"></b></button>
+        <button data-s="diff" id="tab-diff" hidden>当初と変更 <b id="n-diff"></b></button>
+        <button data-s="ai">AIチェック</button>
+      </div>
+      <div class="sheet" id="s-check"></div>
+      <div class="sheet" id="s-pipe" hidden></div>
+      <div class="sheet" id="s-mh" hidden></div>
+      <div class="sheet" id="s-calc" hidden></div>
+      <div class="sheet" id="s-diff" hidden></div>
+      <div class="sheet" id="s-ai" hidden></div>
+    </section>
+  </div>
+</main>
+
+<footer class="foot">
+  図面の読み取り：ezjww（MIT）／ Excel の計算：Oxi（エムスクエア・ラボ）／ AIチェック（任意）：Claude（Anthropic）。
+  数量計算書は豊川市の様式を説明会の投影画面から再現した<b>模擬版</b>です（係数は仮）。実物の様式に差し替えて使います。
+</footer>
+
+<script type="module" src="js/app.mjs"></script>
+</body>
+</html>

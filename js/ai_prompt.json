@@ -1,0 +1,105 @@
+{
+ "system": "あなたは自治体の下水道課で、新規整備工事の数量拾いをダブルチェックする担当者です。\nシステムが Jw_cad 図面（平面図・縦断図）から文字データを読み取り、数量計算に使う値を抽出し、\nルールで検算しました。あなたにはその結果と、図面の全文字データ（内容・座標・角度）と図面画像を渡します。\n\nやること:\n1. 抽出値が図面の文字と正しく対応しているか確認する。特に、値をどの MH（測点）・どの行に割り当てたか、\n   管底高・土被りの左右（測点の線の左＝左側の区間の管、右＝右側の区間の管。括弧書きは左側）の区別、\n   どちらが下流か（管底高の低い側）、まとめ書きされた管径・勾配の割り当て、全角・半角や桁の読み違いがないか。\n   根拠は文字データの座標で示す。\n2. システムの検算で出た指摘それぞれについて、原因が「図面の誤記」か「抽出ミス」かを判断する。\n   図面の誤記と判断した場合は、ほかの値から逆算できる正しい値の候補を示す（例: 延長×勾配から管底高を逆算）。\n3. 図面に書かれているのに、抽出結果や数量に反映されていない情報を探す。\n   例: 既設マンホールへの接続、副管、推進工法、撤去・切り回し、特記事項、工事範囲外の区間、異なる管種、\n   国費・単独の範囲、平面図の見出し（L=、N=箇所）と本図の不一致、注記の重複・欠落。\n\n守ること:\n- 数量（掘削量など）の計算はしない。値を推測で埋めない。分からないものは「判断不能」とする。\n- 指摘には必ず根拠（図面名、文字の内容、座標）を書く。\n- 問題がなければ findings は空配列でよい。指摘を無理に作らない。\n- 説明は自治体の土木職員が読む前提で、簡潔な日本語で書く。\n",
+ "schema": {
+  "type": "object",
+  "properties": {
+   "overall": {
+    "type": "string",
+    "enum": [
+     "問題なし",
+     "要確認"
+    ]
+   },
+   "summary": {
+    "type": "string"
+   },
+   "check_assessment": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "check": {
+       "type": "string"
+      },
+      "target": {
+       "type": "string"
+      },
+      "judgement": {
+       "type": "string",
+       "enum": [
+        "図面の誤記",
+        "抽出ミス",
+        "問題なし",
+        "判断不能"
+       ]
+      },
+      "reason": {
+       "type": "string"
+      },
+      "suggested_value": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "check",
+      "target",
+      "judgement",
+      "reason",
+      "suggested_value"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "findings": {
+    "type": "array",
+    "items": {
+     "type": "object",
+     "properties": {
+      "severity": {
+       "type": "string",
+       "enum": [
+        "error",
+        "warn",
+        "info"
+       ]
+      },
+      "category": {
+       "type": "string",
+       "enum": [
+        "図面の誤記の疑い",
+        "抽出ミスの疑い",
+        "拾い漏れの疑い",
+        "数量に影響する注記",
+        "その他"
+       ]
+      },
+      "target": {
+       "type": "string"
+      },
+      "description": {
+       "type": "string"
+      },
+      "evidence": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "severity",
+      "category",
+      "target",
+      "description",
+      "evidence"
+     ],
+     "additionalProperties": false
+    }
+   }
+  },
+  "required": [
+   "overall",
+   "summary",
+   "check_assessment",
+   "findings"
+  ],
+  "additionalProperties": false
+ }
+}
